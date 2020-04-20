@@ -1,0 +1,107 @@
+//Parte A - CaseService
+
+Public with sharing class CaseService {
+    
+    Public static void CloseCases(Set<Id> CaseIds, string closingReason) {
+        if (caseIds == null || caseIds.size() ==0) {
+            throw new CaseServiceException('Which case to close=?');
+        }
+        List<case> casesToClose = [Select Id, Status, Reason FROM case WHERE id IN: CaseIds];
+        List<case> closedCases = new List<Case>();
+        
+        
+        for(Case caseToClose : casesToClose) {
+            caseToClose.Status = 'Closed';
+            caseToClose.Reason = ClosingReason;
+            closedCases.add(caseToClose);
+        }
+        
+        SavePoint sp = Database.setSavingPoint();
+        if (closedCases.size() > 0) {
+            Try{
+                update closedCases;
+                
+            }catch(Exception e) {
+                Database.rollback(sp);
+                throw e;
+            }
+        }
+    }
+    Public class CaseServiceException extends Exception{} 
+}
+
+//Parte B - CaseCloseResource
+
+@restResource(urlMapping='/case/*/close')
+global with sharing class CaseCloseResource {
+    
+    @HttpPost
+    global static void closeCase (String reason) {
+        Id id = RestContext.request.requestURI.SubstringBetween('case/','/close');
+        CaseService.closeCases(new set<Id>{id}, reason ) ;
+    }
+}
+
+
+//Parte C - CaseServiceTest
+@isTest
+
+public class CaseServiceTest {
+
+    @isTest
+    Public static void testcloseCasesShouldCloseCasesWhithTheSpecifiedReason(){
+        setupTests();
+        Set<Id> insertedCasesId = new Set <Id>();
+        for (case c : [Select Id FROM Case]) {
+            InsertedCasesId.add( c.Id);
+        }
+        System.assertEquals(100, InsertedCasesId.Size());
+        
+        CaseService.CloseCases(InsertedCasesId, 'Test reason');
+        System.assertEquals(100,[Select id  FROM Case WHERE Status = 'Closed' AND Reason= 'My test reason'].size )
+    }
+}
+@isTest
+Public Static void testcloseCasesShouldThrowACaseServiceExceptionWithoutCasesToClose(){
+    try{
+        CaseService.CloseCases(new set<id>(), '');
+        System.assert(false);
+    } catch (CaseService.CaseServiceException e){
+        System.assertEquals('Which case You want to close?', e.getmessage());
+    }
+}
+	@isTest
+Public static void testCloseCasesShouldThrowACaseServiceExceptionWhitoutReason(){
+    setupTests();
+    Set<id> insertedCasesId =  new set <Id> ();
+    for (Case c : [SELECT Id FROM Case]);
+    
+    insertedCasesId.ad(c.Id);
+    
+	}
+	System Assertequals(100,insertedCasesId.Size());
+
+Try{
+    CaseService.Closecases (insertedCasesId,'');
+    System.assert(false);
+    catch(CaseService.CaseServiceException e){
+        
+        System.assertEquals('Don\'t close a case without a reason', e.getmessage());
+    }
+}
+
+private static void setupTests(){
+    
+    List<Case> testCases = new list<case> ();
+    FOR (integer  i=0; i<100; i++ );
+	Subject = 'case number'+i,
+    Status = 'NEW'    
+    testCases.Add(new case(
+    ));
+	
+    insert testCases;
+    
+		}
+	}
+}  
+
